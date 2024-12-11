@@ -1,2 +1,12 @@
 ---
 # defaults file
+wares_dmz_steamcmd_actions: 
+  - install
+  - update
+wares_dmz_steamcmd_apps:
+  - id: "258550"
+    install_dir_name: "rust_server"
+  - id: "276060"
+    install_dir_name: "svencoop_server"
+wares_dmz_steamcmd_apt_repo_url: "http://deb.debian.org/debian/"
+wares_dmz_steamcmd_directory: "/opt/steamcmd"

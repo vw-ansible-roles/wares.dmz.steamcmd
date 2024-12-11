@@ -1,0 +1,31 @@
+---
+- name: Ensure SteamCMD parent directory exists
+  ansible.builtin.file:
+    path: "{{ wares_dmz_steamcmd_directory }}"
+    state: directory
+    owner: "{{ wares_dmz_steamcmd_user }}"
+    group: "{{ wares_dmz_steamcmd_group }}"
+    mode: '0755'
+
+- name: Loop through and install or update SteamCMD apps
+  ansible.builtin.shell: |
+    ./steamcmd.sh \
+    +force_install_dir {{ wares_dmz_steamcmd_directory }}/{{ item.install_dir_name }} \
+    +login anonymous \
+    +app_update {{ item.id }} validate \
+    +quit
+  args:
+    chdir: "{{ wares_dmz_steamcmd_directory }}"
+    executable: "/bin/bash"
+  loop: "{{ wares_dmz_steamcmd_apps }}"
+  loop_control:
+    label: "{{ item.install_dir_name }}"
+  register: steamcmd_results
+  become_user: "{{ wares_dmz_steamcmd_user }}"
+  environment:
+    HOME: "{{ wares_dmz_steamcmd_user_homedir }}"
+    USER: "{{ wares_dmz_steamcmd_user }}"
+
+- name: Debug SteamCMD output for each app
+  ansible.builtin.debug:
+    var: steamcmd_results.results

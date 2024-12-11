@@ -1,0 +1,68 @@
+---
+- name: Ensure contrib repository is present in sources.list
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list
+    line: "deb {{ wares_dmz_steamcmd_apt_repo_url }} {{ wares_dmz_steamcmd_debian_codename }} contrib"
+    state: present
+    insertafter: EOF
+
+- name: Update APT cache
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install dependencies for SteamCMD
+  ansible.builtin.apt:
+    name:
+      - lib32gcc-s1
+      - lib32stdc++6
+      - curl
+      - screen
+      - libsdl2-2.0-0
+    state: present
+
+- name: Create steam user (if not exists)
+  ansible.builtin.user:
+    name: "{{ wares_dmz_steamcmd_user }}"
+    state: present
+    shell: /bin/bash
+
+- name: Create steamcmd directory
+  ansible.builtin.file:
+    path: "{{ wares_dmz_steamcmd_directory }}"
+    state: directory
+    owner: "{{ wares_dmz_steamcmd_user }}"
+    group: "{{ wares_dmz_steamcmd_group }}"
+    mode: '0755'
+
+- name: Download SteamCMD
+  ansible.builtin.get_url:
+    url: https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
+    dest: "{{ wares_dmz_steamcmd_directory }}/steamcmd_linux.tar.gz"
+
+- name: Extract SteamCMD
+  ansible.builtin.unarchive:
+    src: "{{ wares_dmz_steamcmd_directory }}/steamcmd_linux.tar.gz"
+    dest: "{{ wares_dmz_steamcmd_directory }}"
+    remote_src: yes
+
+- name: Set ownership of SteamCMD directory
+  ansible.builtin.file:
+    path: "{{ wares_dmz_steamcmd_directory }}"
+    state: directory
+    owner: "{{ wares_dmz_steamcmd_user }}"
+    group: "{{ wares_dmz_steamcmd_group }}"
+    recurse: yes
+
+- name: Verify SteamCMD installation
+  ansible.builtin.shell: |
+    {{ wares_dmz_steamcmd_directory }}/steamcmd.sh +quit
+  args:
+    executable: /bin/bash
+  register: steamcmd_verification
+  become_user: "{{ wares_dmz_steamcmd_user }}"
+  failed_when: "'error' in steamcmd_verification.stdout.lower() or steamcmd_verification.rc != 0"
+  changed_when: false
+
+- name: Debug SteamCMD verification output
+  ansible.builtin.debug:
+    var: steamcmd_verification.stdout_lines

@@ -1,5 +1,9 @@
 ---
-# tasks file
-- name: Test Message
-  ansible.builtin.debug:
-    msg: "Hello World"
+# wares_dmz_steamcmd_actions
+- name: Download and Install SteamCMD for Linux
+  ansible.builtin.include_tasks: install.yml
+  when: "'install' in wares_dmz_steamcmd_actions"
+
+- name: Update SteamCMD for Linux apps
+  ansible.builtin.include_tasks: update.yml
+  when: "'update' in wares_dmz_steamcmd_actions"
