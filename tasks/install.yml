@@ -23,8 +23,10 @@
 - name: Create steam user (if not exists)
   ansible.builtin.user:
     name: "{{ wares_dmz_steamcmd_user }}"
-    state: present
+    create_home: yes
     shell: /bin/bash
+    home: "{{ wares_dmz_steamcmd_user_homedir }}"
+    state: present
 
 - name: Create steamcmd directory
   ansible.builtin.file:
