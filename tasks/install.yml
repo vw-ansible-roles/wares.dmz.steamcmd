@@ -28,6 +28,11 @@
     home: "{{ wares_dmz_steamcmd_user_homedir }}"
     state: present
 
+- name: Create steam group (if not exists)
+  ansible.builtin.group:
+    name: "{{ wares_dmz_steamcmd_group }}"
+    state: present
+
 - name: Create steamcmd directory
   ansible.builtin.file:
     path: "{{ wares_dmz_steamcmd_directory }}"
