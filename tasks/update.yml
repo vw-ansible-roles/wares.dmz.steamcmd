@@ -25,6 +25,7 @@
   environment:
     HOME: "{{ wares_dmz_steamcmd_user_homedir }}"
     USER: "{{ wares_dmz_steamcmd_user }}"
+  ignore_errors: yes
 
 - name: Debug SteamCMD output for each app
   ansible.builtin.debug:
