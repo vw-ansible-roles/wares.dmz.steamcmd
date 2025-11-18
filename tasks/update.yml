@@ -25,8 +25,21 @@
   environment:
     HOME: "{{ wares_dmz_steamcmd_user_homedir }}"
     USER: "{{ wares_dmz_steamcmd_user }}"
-  ignore_errors: yes
+  failed_when: "{{ stop_on_steamcmd_errors }}"
 
-- name: Debug SteamCMD output for each app
+- name: Generate SteamCMD installation report
+  ansible.builtin.set_fact:
+    steamcmd_report: >-
+      {{
+        steamcmd_results.results | map('combine', {
+          'app_name': item.item.install_dir_name,
+          'app_id': item.item.id,
+          'status': 'success' if item.rc == 0 else 'failed',
+          'rc': item.rc,
+          'stdout': item.stdout.split('\n')[-3:] | join('\n')  # seulement les dernières lignes
+        }) | list
+      }}
+
+- name: Display SteamCMD installation report
   ansible.builtin.debug:
-    var: steamcmd_results.results
+    var: steamcmd_report
