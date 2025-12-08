@@ -7,26 +7,72 @@
     group: "{{ wares_dmz_steamcmd_group }}"
     mode: '0755'
 
-- name: Loop through and install or update SteamCMD apps
+#~ - name: Loop through and install or update SteamCMD apps
+  #~ ansible.builtin.shell: |
+    #~ ./steamcmd.sh \
+    #~ +force_install_dir {{ wares_dmz_steamcmd_directory }}/{{ item.install_dir_name }} \
+    #~ +login anonymous \
+    #~ +app_update {{ item.id }} validate \
+    #~ +quit
+  #~ args:
+    #~ chdir: "{{ wares_dmz_steamcmd_directory }}"
+    #~ executable: "/bin/bash"
+  #~ loop: "{{ wares_dmz_steamcmd_apps }}"
+  #~ loop_control:
+    #~ label: "{{ item.install_dir_name }}"
+  #~ register: steamcmd_results
+  #~ become_user: "{{ wares_dmz_steamcmd_user }}"
+  #~ environment:
+    #~ HOME: "{{ wares_dmz_steamcmd_user_homedir }}"
+    #~ USER: "{{ wares_dmz_steamcmd_user }}"
+  #~ failed_when: "{{ stop_on_steamcmd_errors }}"
+
+- name: Loop through and install or update SteamCMD apps (capture rc, always exit 0)
   ansible.builtin.shell: |
+    set +e
     ./steamcmd.sh \
     +force_install_dir {{ wares_dmz_steamcmd_directory }}/{{ item.install_dir_name }} \
     +login anonymous \
     +app_update {{ item.id }} validate \
     +quit
+    rc=$?
+    echo "STEAMCMD_EXIT_CODE=${rc}"
+    if [ $rc -ne 0 ]; then
+      echo "ERROR: steamcmd failed for {{ item.install_dir_name }} (app {{ item.id }}) rc=$rc" >&2
+    fi
+    exit 0
   args:
     chdir: "{{ wares_dmz_steamcmd_directory }}"
-    executable: "/bin/bash"
+    executable: /bin/bash
   loop: "{{ wares_dmz_steamcmd_apps }}"
   loop_control:
     label: "{{ item.install_dir_name }}"
-  register: steamcmd_results
+  register: wares_dmz_steamcmd_results
   become_user: "{{ wares_dmz_steamcmd_user }}"
   environment:
     HOME: "{{ wares_dmz_steamcmd_user_homedir }}"
     USER: "{{ wares_dmz_steamcmd_user }}"
-  failed_when: "{{ stop_on_steamcmd_errors }}"
 
-- name: Display SteamCMD installation report
-  ansible.builtin.debug:
-    var: steamcmd_results.results
+- name: Init failed installs list
+  ansible.builtin.set_fact:
+    wares_dmz_steamcmd_failed: []
+
+- name: Build list of failed installs
+  ansible.builtin.set_fact:
+    wares_dmz_steamcmd_failed: "{{ wares_dmz_steamcmd_failed + [ item.item.install_dir_name + ' (app=' + item.item.id|string + ', rc=' + rc|string + ')' ] }}"
+  loop: "{{ wares_dmz_steamcmd_results.results | default([]) }}"
+  vars:
+    rc_text: "{{ item.stdout | default('') | regex_search('STEAMCMD_EXIT_CODE=(\\d+)', '\\1') | default('0') }}"
+    rc: "{{ rc_text | int }}"
+
+- debug: var=stop_on_steamcmd_errors
+- debug: var=wares_dmz_steamcmd_failed
+
+- name: Fail if there were failures and stop_on_steamcmd_errors is true
+  ansible.builtin.fail:
+    msg: "Some steamcmd installs failed: {{ wares_dmz_steamcmd_failed | join(', ') }}"
+  when: stop_on_steamcmd_errors and (wares_dmz_steamcmd_failed | default([]) | length) > 0
+
+#~ - name: Display SteamCMD installation report
+  #~ ansible.builtin.debug:
+    #~ var: wares_dmz_steamcmd_results.results
