@@ -4,4 +4,3 @@ wares_dmz_steamcmd_user: "steam"
 wares_dmz_steamcmd_user_homedir: "/home/steam"
 wares_dmz_steamcmd_group: "{{ wares_dmz_steamcmd_user }}"
 wares_dmz_steamcmd_debian_codename: "{{ ansible_distribution_release }}"
-stop_on_steamcmd_errors: false

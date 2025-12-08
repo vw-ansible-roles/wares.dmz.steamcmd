@@ -53,26 +53,20 @@
     HOME: "{{ wares_dmz_steamcmd_user_homedir }}"
     USER: "{{ wares_dmz_steamcmd_user }}"
 
-- name: Init failed installs list
+- name: Init list of return codes
   ansible.builtin.set_fact:
-    wares_dmz_steamcmd_failed: []
-
-- name: Build list of failed installs
+    steamcmd_rc_list: []
+    
+- name: Build list of return codes
   ansible.builtin.set_fact:
-    wares_dmz_steamcmd_failed: "{{ wares_dmz_steamcmd_failed + [ item.item.install_dir_name + ' (app=' + item.item.id|string + ', rc=' + rc|string + ')' ] }}"
+    steamcmd_rc_list: >-
+      {{ steamcmd_rc_list +
+         [ item.item.install_dir_name
+           + ' (app=' + item.item.id|string
+           + ', rc=' + rc|string + ')' ]
+      }}
   loop: "{{ wares_dmz_steamcmd_results.results | default([]) }}"
   vars:
-    rc_text: "{{ item.stdout | default('') | regex_search('STEAMCMD_EXIT_CODE=(\\d+)', '\\1') | default('0') }}"
-    rc: "{{ rc_text | int }}"
+    rc_raw: "{{ item.stdout | regex_search('STEAMCMD_EXIT_CODE=(\\d+)') | default('STEAMCMD_EXIT_CODE=0') }}"
+    rc: "{{ (rc_raw | regex_replace('^.*=', '')) | int }}"
 
-- debug: var=stop_on_steamcmd_errors
-- debug: var=wares_dmz_steamcmd_failed
-
-- name: Fail if there were failures and stop_on_steamcmd_errors is true
-  ansible.builtin.fail:
-    msg: "Some steamcmd installs failed: {{ wares_dmz_steamcmd_failed | join(', ') }}"
-  when: stop_on_steamcmd_errors and (wares_dmz_steamcmd_failed | default([]) | length) > 0
-
-#~ - name: Display SteamCMD installation report
-  #~ ansible.builtin.debug:
-    #~ var: wares_dmz_steamcmd_results.results
