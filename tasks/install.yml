@@ -41,10 +41,9 @@
     group: "{{ wares_dmz_steamcmd_group }}"
     mode: '0755'
 
-- name: Download SteamCMD
-  ansible.builtin.get_url:
-    url: https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
-    dest: "{{ wares_dmz_steamcmd_directory }}/steamcmd_linux.tar.gz"
+- name: Download steamcmd
+  ansible.builtin.shell: |
+    curl -L -o {{ wares_dmz_steamcmd_directory }}/steamcmd_linux.tar.gz https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 
 - name: Extract SteamCMD
   ansible.builtin.unarchive:
